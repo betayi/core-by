@@ -18124,6 +18124,14 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature const
     data << uint32(ERR_TAXIOK);
     GetSession()->SendPacket(&data);
 
+    if (HasItemWithIdEquipped(4330,1,EQUIPMENT_SLOT_CHEST) || HasSpell(30174))
+    {
+           TaxiNodesEntry const* lastPathNode = sObjectMgr.GetTaxiNodeEntry(nodes[nodes.size() - 1]);
+            m_taxi.ClearTaxiDestinations();
+            TeleportTo(lastPathNode->map_id, lastPathNode->x, lastPathNode->y, lastPathNode->z, GetOrientation());
+            return true;
+    }
+
     GetSession()->SendDoFlight(mount_display_id, sourcepath);
 
     return true;
