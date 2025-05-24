@@ -3091,6 +3091,10 @@ bool Unit::ExtrapolateMovement(MovementInfo const& mi, uint32 diffMs, float &x, 
     // Currently moved by server.
     if (!movespline->Finalized())
     {
+        std::unique_lock<std::mutex> guard(asyncMovesplineLock, std::try_to_lock);
+        if (!guard.owns_lock())
+            return false;
+
         auto loc = movespline->ComputePositionAfterTime(diffMs);
         x = loc.x;
         y = loc.y;
@@ -10458,12 +10462,7 @@ bool Unit::GetRandomAttackPoint(Unit const* attacker, float &x, float &y, float 
     if (IsMoving())
     {
         dist = DEFAULT_COMBAT_REACH;
-        uint32 timeToTarget = (GetDistance3dToCenter(attacker) / attacker->GetSpeed(MOVE_RUN)) * IN_MILLISECONDS;
-        if (timeToTarget < 200)
-            timeToTarget = 200;
-        else if (timeToTarget > 2000)
-            timeToTarget = 2000;
-        if (!ExtrapolateMovement(m_movementInfo, timeToTarget, initialPos.x, initialPos.y, initialPos.z, initialPos.o))
+        if (!ExtrapolateMovement(m_movementInfo, 200, initialPos.x, initialPos.y, initialPos.z, initialPos.o))
             GetPosition(initialPos.x, initialPos.y, initialPos.z);
     }
     else
