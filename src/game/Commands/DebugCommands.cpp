@@ -198,12 +198,9 @@ bool ChatHandler::HandleDebugSendSpellFailCommand(char* args)
     if (!ExtractOptUInt32(&args, failarg2, 0))
         return false;
 
-    char* unk = strtok(nullptr, " ");
-    uint8 unkI = unk ? (uint8)atoi(unk) : 2;
-
     WorldPacket data(SMSG_CAST_RESULT, 4 + 1 + 1);
     data << uint32(133);
-    data << uint8(unkI);
+    data << uint8(2);
     data << uint8(failnum);
     if (failarg1 || failarg2)
         data << uint32(failarg1);
@@ -2079,7 +2076,7 @@ bool ChatHandler::HandleVideoTurn(char*)
         sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "%f %f %f", angle, d, z);
         a.push_back(Vector3(x + d * cos(angle), y + d * sin(angle), posZ));
     }
-    Movement::MoveSplineInit init(*m_session->GetPlayer());
+    Movement::MoveSplineInit init(*m_session->GetPlayer(), "HandleVideoTurn");
     init.MovebyPath(a);
     init.SetFly();
     init.SetVelocity(moveSpeed);
@@ -2127,7 +2124,7 @@ bool ChatHandler::HandleDebugExp(char*)
             a.push_back(Vector3(currx, curry, currz));
         }
 
-        Movement::MoveSplineInit init(*target);
+        Movement::MoveSplineInit init(*target, "HandleDebugExp");
         init.MovebyPath(a);
         init.SetWalk(true);
         init.SetVelocity(moveSpeed);
@@ -2649,7 +2646,7 @@ bool ChatHandler::HandleMmapPathCommand(char* args)
             if (transport)
             {
                 transport->AddPassenger(wp);
-                Movement::MoveSplineInit init(*wp);
+                Movement::MoveSplineInit init(*wp, "HandleMmapPathCommand");
                 init.SetTransport(transport->GetGUIDLow());
                 init.SetFacing(wp->GetOrientation());
                 init.Launch();

@@ -209,13 +209,11 @@ Object::~Object()
         MANGOS_ASSERT(false);
     }
 
-    if (m_uint32Values)
-    {
-        //sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Object desctr 1 check (%p)",(void*)this);
-        delete [] m_uint32Values;
-        delete [] m_uint32Values_mirror;
-        //sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Object desctr 2 check (%p)",(void*)this);
-    }
+    delete[] m_uint32Values;
+    m_uint32Values = nullptr;
+    delete[] m_uint32Values_mirror;
+    m_uint32Values_mirror = nullptr;
+    m_deleted = true;
 }
 
 void Object::_InitValues()
@@ -1484,7 +1482,7 @@ void WorldObject::Relocate(float x, float y, float z, float orientation)
 
     m_movementInfo.ChangePosition(x, y, z, orientation);
     m_movementInfo.UpdateTime(WorldTimer::getMSTime());
-    /*if (Transport* t = GetTransport())
+    /*if (ShipTransport* t = GetTransport())
     {
         t->CalculatePassengerOffset(x, y, z);
         m_movementInfo.t_pos.x = x;
@@ -1852,26 +1850,21 @@ bool WorldObject::HasInArc(float const arcangle, float const x, float const y) c
     if (x == m_position.x && y == m_position.y)
         return true;
 
-    float arc = arcangle;
-
-    // move arc to range 0.. 2*pi
-    while (arc >= 2.0f * M_PI_F)
-        arc -=  2.0f * M_PI_F;
-    while (arc < 0)
-        arc +=  2.0f * M_PI_F;
+    if (arcangle <= 0.0f)
+        return false;
+    if (arcangle >= 2.0f * M_PI_F)
+        return true;
 
     float angle = GetAngle(x, y);
     angle -= m_position.o;
 
     // move angle to range -pi ... +pi
-    while (angle > M_PI_F)
+    angle = Geometry::NormalizeOrientation(angle);
+    if (angle > M_PI_F)
         angle -= 2.0f * M_PI_F;
-    while (angle < -M_PI_F)
-        angle += 2.0f * M_PI_F;
 
-    float lborder =  -1 * (arc / 2.0f);                     // in range -pi..0
-    float rborder = (arc / 2.0f);                           // in range 0..pi
-    return ((angle >= lborder) && (angle <= rborder));
+    float const halfArc = arcangle * 0.5f;
+    return std::abs(angle) <= halfArc;
 }
 
 bool WorldObject::HasInArc(WorldObject const* target, float const arcangle, float offset) const
@@ -1880,10 +1873,10 @@ bool WorldObject::HasInArc(WorldObject const* target, float const arcangle, floa
     if (target == this)
         return true;
 
-    float arc = arcangle;
-
-    // move arc to range 0.. 2*pi
-    arc = Geometry::NormalizeOrientation(arc);
+    if (arcangle <= 0.0f)
+        return false;
+    if (arcangle >= 2.0f * M_PI_F)
+        return true;
 
     float angle = GetAngle(target);
     angle -= m_position.o + offset;
@@ -1893,9 +1886,8 @@ bool WorldObject::HasInArc(WorldObject const* target, float const arcangle, floa
     if (angle > M_PI_F)
         angle -= 2.0f * M_PI_F;
 
-    float lborder =  -1 * (arc / 2.0f);                     // in range -pi..0
-    float rborder = (arc / 2.0f);                           // in range 0..pi
-    return ((angle >= lborder) && (angle <= rborder));
+    float const halfArc = arcangle * 0.5f;
+    return std::abs(angle) <= halfArc;
 }
 
 bool WorldObject::IsFacingTarget(WorldObject const* target) const

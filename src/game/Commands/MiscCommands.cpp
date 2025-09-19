@@ -520,6 +520,47 @@ bool ChatHandler::HandleGuildRenameCommand(char* args)
     return true;
 }
 
+bool ChatHandler::HandleGuildShowLogCommand(char* args)
+{
+    if (!args || !*args)
+        return false;
+
+    char* guildName = ExtractQuotedArg(&args);
+    if (!guildName)
+        return false;
+
+    Guild* target = sGuildMgr.GetGuildByName(guildName);
+    if (!target)
+    {
+        SendSysMessage(LANG_GUILD_NOT_FOUND);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    if (target->GetGuildEventLog().empty())
+    {
+        SendSysMessage("Guild log is empty.");
+        return true;
+    }
+
+    time_t now = time(nullptr);
+    SendSysMessage("Showing guild log:");
+    for (auto const& itr : target->GetGuildEventLog())
+    {
+        time_t timeSinceEvent = now - itr.timestamp;
+        PSendSysMessage("- Type: %s%s%s, Player1: %s, Player2: %s, Time: %s%s%s ago",
+            m_session ? "|cff00ff00" : "",
+            GuildEventLogTypeToString(itr.eventType),
+            m_session ? "|r" : "",
+            GetNameLink(itr.playerGuid1).c_str(),
+            GetNameLink(itr.playerGuid2).c_str(),
+            m_session ? "|cffffffff" : "",
+            secsToTimeString(timeSinceEvent, true).c_str(),
+            m_session ? "|r" : "");
+    }
+    return true;
+}
+
 bool ChatHandler::HandleInstanceBindingMode(char* args)
 {
     Player* player = GetSession()->GetPlayer();
@@ -1213,7 +1254,7 @@ bool ChatHandler::HandlePoolSpawnsCommand(char* args)
             if (GameObjectData const* data = sObjectMgr.GetGOData(itr))
                 if (GameObjectInfo const* info = sObjectMgr.GetGameObjectTemplate(data->id))
                     PSendSysMessage(LANG_GO_LIST_CHAT, itr, PrepareStringNpcOrGoSpawnInformation<GameObject>(itr).c_str(),
-                                    itr, info->name, data->position.x, data->position.y, data->position.z, data->position.mapId);
+                                    itr, info->name.c_str(), data->position.x, data->position.y, data->position.z, data->position.mapId);
 
     return true;
 }
@@ -1310,10 +1351,10 @@ bool ChatHandler::HandlePoolInfoCommand(char* args)
                     char const* active = goSpawns && goSpawns->find(itr.guid) != goSpawns->end() ? active_str.c_str() : "";
                     if (m_session)
                         PSendSysMessage(LANG_POOL_CHANCE_GO_LIST_CHAT, itr.guid, PrepareStringNpcOrGoSpawnInformation<GameObject>(itr.guid).c_str(),
-                                        itr.guid, info->name, data->position.x, data->position.y, data->position.z, data->position.mapId, itr.chance, active);
+                                        itr.guid, info->name.c_str(), data->position.x, data->position.y, data->position.z, data->position.mapId, itr.chance, active);
                     else
                         PSendSysMessage(LANG_POOL_CHANCE_GO_LIST_CONSOLE, itr.guid, PrepareStringNpcOrGoSpawnInformation<GameObject>(itr.guid).c_str(),
-                                        info->name, data->position.x, data->position.y, data->position.z, data->position.mapId, itr.chance, active);
+                                        info->name.c_str(), data->position.x, data->position.y, data->position.z, data->position.mapId, itr.chance, active);
                 }
             }
         }
@@ -1332,10 +1373,10 @@ bool ChatHandler::HandlePoolInfoCommand(char* args)
                     char const* active = goSpawns && goSpawns->find(itr.guid) != goSpawns->end() ? active_str.c_str() : "";
                     if (m_session)
                         PSendSysMessage(LANG_POOL_GO_LIST_CHAT, itr.guid, PrepareStringNpcOrGoSpawnInformation<GameObject>(itr.guid).c_str(),
-                                        itr.guid, info->name, data->position.x, data->position.y, data->position.z, data->position.mapId, active);
+                                        itr.guid, info->name.c_str(), data->position.x, data->position.y, data->position.z, data->position.mapId, active);
                     else
                         PSendSysMessage(LANG_POOL_GO_LIST_CONSOLE, itr.guid, PrepareStringNpcOrGoSpawnInformation<GameObject>(itr.guid).c_str(),
-                                        info->name, data->position.x, data->position.y, data->position.z, data->position.mapId, active);
+                                        info->name.c_str(), data->position.x, data->position.y, data->position.z, data->position.mapId, active);
                 }
             }
         }

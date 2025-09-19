@@ -5859,3 +5859,21 @@ bool ChatHandler::HandleListExploredAreasCommand(char* args)
     }
     return true;
 }
+
+bool ChatHandler::HandleListVisibleGuidsCommand(char* args)
+{
+    Player* pPlayer = GetSelectedPlayer();
+    if (!pPlayer)
+    {
+        SendSysMessage(LANG_NO_CHAR_SELECTED);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    PSendSysMessage("Listing guids visible by %s", pPlayer->GetName());
+    
+    for (auto const& guid : pPlayer->m_visibleGUIDs)
+        PSendSysMessage("- %s", guid.GetString().c_str());
+
+    return true;
+}
